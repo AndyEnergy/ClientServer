@@ -1,0 +1,82 @@
+package server;
+
+import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.*;
+import java.net.*;
+import javax.swing.*;
+
+public class ServerClient {
+public static String hostname = ("127.0.0.1"); //initialisiert die Variable "hostname" für das ganze Projekt und deklariert sie zunächst mit der IP Adresse des gerade genutzten PCs, sodass Nachrichten zunächst im gleichen Dialogfenster gesendet und empfangen werden
+	
+    public static void main(String[] args) {
+        int port = 1337; //initialisiert und deklariert die Variable "port" mit der Portnummer, über die der Server Nachrichten empfangen soll
+        
+        JFrame frame = new JFrame("Server/Client"); //initialisiert und deklariert das Dialogfenster und legt den Name "Server/Client" als Fenstername fest 
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); //beendet das Programm, wenn das Dialogfenster geschlossen wird
+        frame.setSize(350, 200); //legt die Größe des Dialogfensters fest
+        frame.setLayout(new FlowLayout()); //legt das Layout des Dialogfensters fest (in diesem Fall werden die Elemente dynamisch hintereinander angeordnet, mit Zeilenumbruch beim Erreichen des Dialogfensterendes)
+    	
+    	JTextField textFenster = new JTextField(20); //initialisiert und deklariert die Variable textFenster als Textfeld mit einer Länge von 20 Pixeln
+        JButton sendButton = new JButton("Senden"); //initialisiert und deklariert die Variable sendButton als Button mit der Beschriftung "Senden"
+    	JTextField ipFenster = new JTextField(20); //initialisiert und deklariert die Variable ipFenster als Textfeld mit einer Länge von 20 Pixeln
+    	JLabel ipLabel = new JLabel("Empfänger IP: "); //initialisiert und deklariert die Variable ipLabel als anzeigbaren Text, der da lautet "Empfänger IP: "
+    	JLabel nachrichtLabel = new JLabel("Nachricht: "); //initialisiert und deklariert die Variable nachrichtLabel als anzeigbaren Text, der da lautet "Nachricht: "
+    	frame.add(ipLabel); //fügt den Text (Label), der Variablen ipLabel, dem Dialogfenster hinzu
+    	frame.add(ipFenster); //fügt das Eingabefenster für die IP, der Variablen ipFenster, dem Dialogfenster hinzu
+    	frame.add(nachrichtLabel); //fügt den Text (Label), der Variablen nachrichtLabel, dem Dialogfenster hinzu
+    	frame.add(textFenster); //fügt das Eingabefenster für die zu sendende Nachricht, der Variablen textFenster, dem Dialogfenster hinzu
+        frame.add(sendButton); //fügt den Button mit der Auschrift "Senden", der Variable sendButton, dem Dialogfenster hinzu 
+        frame.setVisible(true); //macht das komplette Dialogfenster für den User sichtbar
+       
+        sendButton.addActionListener(new ActionListener() { //legt fest, dass beim Klicken des Senden Buttons, der Variablen sendButton, eine Aktion ausgeführt wird
+            public void actionPerformed(ActionEvent e) { //im Folgenden wird festgelegt, welche(n) Aktion(en) bzw. welche Code beim Klicken auf den Senden Button ausgeführt werden soll
+            	hostname = ipFenster.getText(); //deklariert die Variable "hostname" mit dem im "ipFenster" eingetragenen Text, idealerweise der richtigen IP Adresse. Bleibt das Feld leer, bleibt die vorherige Deklaration bestehen
+            	String text = textFenster.getText(); //initialisiert und deklariert die Variable "text" mit dem vom User eingetragen Text in "textFenster" 
+            	
+                sendToServer(text); //startet die Methode "sendToServer" weiter unten im Programm und übergibt ihr den vom User eingetragenen Text, welcher unter der Variablen "text" deklariert wurde
+            }
+        });       
+   
+        try (ServerSocket serverSocket = new ServerSocket(port)) { //startet den Server zum Empfangen der Nachrichten und nutzt zum Empfangen den unter "port" deklarierten Port
+            System.out.println("Server gestartet und wartet auf Verbindungen..."); //gibt die Bestätigung an die Konsole, dass das Programm an der Stelle zum Starten des Servers angekommen ist
+
+            while (true) { //setzt eine while Schleife, damit beliebig oft Nachrichten versendet werden können und nicht nur einmal pro Start des Programms
+                try (Socket socket = serverSocket.accept(); //initialisiert die Variable "socket" als Client und legt fest, dass sie Daten vom Server (serverSocket) akzeptiert
+                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) { //liest den eingegebenen Text, der vom Clienten empfangen wird ein und deklariert die Variable "in" damit
+                	String empfangenerText = in.readLine(); //initalisiert "empfangenerText" als String und deklariert sie mit der ersten Textzeile aus dem unter der Variablen "in" deklarierten Text                
+                    System.out.println("Empfangener Text: " + empfangenerText); ////zum Überprüfen des empfangenen Textes in der Konsole
+                    JLabel textAnzeige = new JLabel("Empfangener Text: " + empfangenerText); //initialisiert die Variable textAnzeige als JLabel und weist ihr unter anderem den empfangenen Text zu 
+                    frame.getContentPane().removeAll(); //Löscht den Inhalt des JFrames (Dialogfensters) einmal komplett
+	            	frame.revalidate(); //revalidate und repaint sorgen dafür, dass das JFrame Dialogfenster nochmal erneut sauber aufgebaut werden kann
+	            	frame.repaint();
+	            	//folgende Befehle fügen die Elemente dem JFrame (Dialogfenster) erneut hinzu, wie beim Programmstart (siehe oben)
+	            	frame.add(ipLabel);
+	            	frame.add(ipFenster);
+	            	frame.add(nachrichtLabel);
+   	            	frame.add(textFenster);
+   	            	frame.add(sendButton);
+	            	frame.add(textAnzeige);
+	            	frame.setVisible(true); 
+                    //macht das Dialogfenster mit den Änderungen erneut sichtbar
+                                    }
+            }
+          //Catch Statement, falls keine Verbindung zwischen Server und Client besteht  
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private static void sendToServer(String sendText) { //Beginn der Methode "sendtoServer" und Initialisierung, sowie Deklaration der Variablen sendText mit dem weiter oben übergebenen Parameter unter der Variablen "text"
+    	int port = 1337; //Initialisierung und Deklaration der Variablen port mit dem Port, über den gesendet werden soll 
+        try (Socket socket = new Socket(hostname, port); //verbindet den Clienten über den eingegebenen Hostname(IP Adresse) und über den in der Variablen "port" definierten Parameter
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) { //initialisiert und deklariert die Variable "out" zum Senden der Nachricht über den Clienten
+            out.println(sendText); //sendet den in der Veriablen "sendText" enthaltenen Text über den Clienten an den Server
+            System.out.println("Text gesendet: " + sendText); //Bestätigung über den gesendeten Text in der Konsole
+        //Catch Statement, falls keine Verbindung zwischen Server und Client besteht    
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    
+    }
+}
